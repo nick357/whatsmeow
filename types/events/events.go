@@ -419,6 +419,10 @@ type ChatPresence struct {
 	Media types.ChatPresenceMedia // When composing, the type of message
 }
 
+type MessageAck struct {
+	MessageID types.MessageID
+}
+
 // Presence is emitted when a presence update is received.
 //
 // Note that WhatsApp only sends you presence updates for individual users after you subscribe to them:
