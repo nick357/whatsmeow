@@ -611,6 +611,17 @@ func (cli *Client) handleHistorySyncNotificationLoop() {
 	}
 }
 
+func (cli *Client) handleHistorySyncNotificationWithCtx(notif *waE2E.HistorySyncNotification) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			cli.Log.Errorf("History sync handler with ctx panicked: %v\n%s", err, debug.Stack())
+		}
+	}()
+	ctx := context.TODO()
+	cli.handleHistorySyncNotification(ctx, notif)
+}
+
 func (cli *Client) handleHistorySyncNotification(ctx context.Context, notif *waE2E.HistorySyncNotification) {
 	var historySync waHistorySync.HistorySync
 	if data, err := cli.Download(ctx, notif); err != nil {
@@ -693,10 +704,11 @@ func (cli *Client) handleProtocolMessage(ctx context.Context, info *types.Messag
 	protoMsg := msg.GetProtocolMessage()
 
 	if protoMsg.GetHistorySyncNotification() != nil && info.IsFromMe {
-		cli.historySyncNotifications <- protoMsg.HistorySyncNotification
-		if cli.historySyncHandlerStarted.CompareAndSwap(false, true) {
-			go cli.handleHistorySyncNotificationLoop()
-		}
+		//cli.historySyncNotifications <- protoMsg.HistorySyncNotification
+		//if cli.historySyncHandlerStarted.CompareAndSwap(false, true) {
+		//	go cli.handleHistorySyncNotificationLoop()
+		//}
+		go cli.handleHistorySyncNotificationWithCtx(protoMsg.HistorySyncNotification)
 		go cli.sendProtocolMessageReceipt(info.ID, types.ReceiptTypeHistorySync)
 	}
 
