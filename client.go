@@ -808,6 +808,11 @@ func (cli *Client) sendNodeAndGetData(node waBinary.Node) ([]byte, error) {
 		return nil, ErrNotConnected
 	}
 
+	//真正发送数据的地方，调试时候酌情加日志
+	//if node.Tag == "message" {
+	//	cli.Log.Warnf("xx:%s", node.XMLString())
+	//}
+
 	payload, err := waBinary.Marshal(node)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal node: %w", err)
