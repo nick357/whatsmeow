@@ -41,7 +41,7 @@ func (cli *Client) handleStreamError(node *waBinary.Node) {
 	case code == "516":
 		cli.expectDisconnect()
 		cli.Log.Infof("Got 516 code, sending LoggedOut event and deleting session")
-		go cli.dispatchEvent(&events.LoggedOut{OnConnect: false, Reason: events.ConnectFailureLoggedOut})
+		go cli.dispatchEvent(&events.LoggedOut{OnConnect: false, Reason: events.ConnectFailureLoginFailed516})
 		err := cli.Store.Delete(ctx)
 		if err != nil {
 			cli.Log.Warnf("Failed to delete store after 516 error: %v", err)
