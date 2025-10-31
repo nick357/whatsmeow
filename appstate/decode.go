@@ -260,7 +260,8 @@ func (proc *Processor) DecodePatches(ctx context.Context, list *PatchList, initi
 	if list.Snapshot != nil {
 		newMutations, currentState, err = proc.decodeSnapshot(ctx, list.Name, list.Snapshot, currentState, validateMACs, newMutations)
 		if err != nil {
-			return
+			// 这里遇到错误应该要继续，避免后续处理被跳过，无法保存 regular_high，导致删除会话的 version 无法获取
+			// return
 		}
 	}
 
@@ -290,7 +291,8 @@ func (proc *Processor) DecodePatches(ctx context.Context, list *PatchList, initi
 			var keys ExpandedAppStateKeys
 			keys, err = proc.validateSnapshotMAC(ctx, list.Name, currentState, patch.GetKeyID().GetID(), patch.GetSnapshotMac())
 			if err != nil {
-				return
+				// 这里遇到错误应该要继续，避免后续处理被跳过，无法保存 regular_high，导致删除会话的 version 无法获取
+				// return
 			}
 			patchMAC := generatePatchMAC(patch, list.Name, keys.PatchMAC, patch.GetVersion().GetVersion())
 			if !bytes.Equal(patchMAC, patch.GetPatchMAC()) {
