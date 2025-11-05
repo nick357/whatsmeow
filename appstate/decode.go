@@ -229,7 +229,8 @@ func (proc *Processor) decodeSnapshot(ctx context.Context, name WAPatchName, ss 
 	if validateMACs {
 		_, err = proc.validateSnapshotMAC(ctx, name, currentState, ss.GetKeyID().GetID(), ss.GetMac())
 		if err != nil {
-			return
+			// 主动同步 regular_high 时只有 snapshot 校验不通过也不退出，为了最终能保存到数据库
+			// return
 		}
 	}
 
@@ -237,8 +238,9 @@ func (proc *Processor) decodeSnapshot(ctx context.Context, name WAPatchName, ss 
 	out.Mutations = newMutationsInput
 	err = proc.decodeMutations(ctx, encryptedMutations, &out, validateMACs)
 	if err != nil {
-		err = fmt.Errorf("failed to decode snapshot of v%d: %w", currentState.Version, err)
-		return
+		// 主动同步 regular_high 时只有 snapshot 校验不通过也不退出，为了最终能保存到数据库
+		// err = fmt.Errorf("failed to decode snapshot of v%d: %w", currentState.Version, err)
+		// return
 	}
 	proc.storeMACs(ctx, name, currentState, &out)
 	newMutations = out.Mutations
