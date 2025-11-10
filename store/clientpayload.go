@@ -133,6 +133,30 @@ var DeviceProps = &waCompanionReg.DeviceProps{
 	},
 	PlatformType:    waCompanionReg.DeviceProps_UNKNOWN.Enum(),
 	RequireFullSync: proto.Bool(false),
+	HistorySyncConfig: &waCompanionReg.DeviceProps_HistorySyncConfig{
+		// 指定客户端可用于存储同步历史的空间上限（单位 MB）
+		StorageQuotaMb: proto.Uint32(516),
+		// 是否在首次端到端加密消息中内联包含初始同步数据
+		InlineInitialPayloadInE2EeMsg: proto.Bool(true),
+		// 是否支持同步通话记录历史
+		SupportCallLogHistory: proto.Bool(false),
+		// 是否支持同步Bot 用户代理会话历史
+		SupportBotUserAgentChatHistory: proto.Bool(true), // 0
+		// 是否支持同步消息反应 (Reactions) 和 投票 (Polls)
+		SupportCagReactionsAndPolls: proto.Bool(true),
+		// 是否支持同步 Biz Hosted Message
+		SupportBizHostedMsg: proto.Bool(true), // 0
+		// 是否支持 Recent Sync Chunk 动态消息数量调整
+		SupportRecentSyncChunkMessageCountTuning: proto.Bool(true),
+		// 是否支持 Hosted Group Message 同步这些群聊的消息
+		SupportHostedGroupMsg: proto.Bool(true),
+		// 是否支持同步 FBID Bot 聊天记录
+		SupportFbidBotChatHistory: proto.Bool(true), // 0
+		// 是否支持 Message Association 元数据同步
+		SupportMessageAssociation: proto.Bool(true),
+		// 是否支持同步 群组历史消息
+		SupportGroupHistory: proto.Bool(false),
+	},
 }
 
 func SetOSInfo(name string, version [3]uint32) {

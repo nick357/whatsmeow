@@ -611,6 +611,7 @@ type DeviceProps_HistorySyncConfig struct {
 	SupportFbidBotChatHistory                *bool                  `protobuf:"varint,12,opt,name=supportFbidBotChatHistory" json:"supportFbidBotChatHistory,omitempty"`
 	SupportAddOnHistorySyncMigration         *bool                  `protobuf:"varint,13,opt,name=supportAddOnHistorySyncMigration" json:"supportAddOnHistorySyncMigration,omitempty"`
 	SupportMessageAssociation                *bool                  `protobuf:"varint,14,opt,name=supportMessageAssociation" json:"supportMessageAssociation,omitempty"`
+	SupportGroupHistory                      *bool                  `protobuf:"varint,15,opt,name=supportGroupHistory" json:"supportGroupHistory,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }
