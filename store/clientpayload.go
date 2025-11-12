@@ -109,13 +109,13 @@ var BaseClientPayload = &waWa6.ClientPayload{
 		AppVersion:     waVersion.ProtoAppVersion(),
 		Mcc:            proto.String("000"),
 		Mnc:            proto.String("000"),
-		OsVersion:      proto.String("0.1.0"),
+		OsVersion:      proto.String("0.1"),
 		Manufacturer:   proto.String(""),
 		Device:         proto.String("Desktop"),
-		OsBuildNumber:  proto.String("0.1.0"),
+		OsBuildNumber:  proto.String("0.1"),
 
 		LocaleLanguageIso6391:       proto.String("en"),
-		LocaleCountryIso31661Alpha2: proto.String("en"),
+		LocaleCountryIso31661Alpha2: proto.String("US"),
 	},
 	WebInfo: &waWa6.ClientPayload_WebInfo{
 		WebSubPlatform: waWa6.ClientPayload_WebInfo_WEB_BROWSER.Enum(),
@@ -196,6 +196,7 @@ func (device *Device) getLoginPayload() *waWa6.ClientPayload {
 	payload.Device = proto.Uint32(uint32(device.ID.Device))
 	payload.Passive = proto.Bool(true)
 	payload.Pull = proto.Bool(true)
+	payload.LidDbMigrated = proto.Bool(true)
 	return payload
 }
 
