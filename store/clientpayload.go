@@ -135,7 +135,7 @@ var DeviceProps = &waCompanionReg.DeviceProps{
 	RequireFullSync: proto.Bool(false),
 	HistorySyncConfig: &waCompanionReg.DeviceProps_HistorySyncConfig{
 		// 指定客户端可用于存储同步历史的空间上限（单位 MB）
-		StorageQuotaMb: proto.Uint32(516),
+		StorageQuotaMb: proto.Uint32(1024),
 		// 是否在首次端到端加密消息中内联包含初始同步数据
 		InlineInitialPayloadInE2EeMsg: proto.Bool(true),
 		// 是否支持同步通话记录历史
@@ -196,7 +196,7 @@ func (device *Device) getLoginPayload() *waWa6.ClientPayload {
 	payload.Device = proto.Uint32(uint32(device.ID.Device))
 	payload.Passive = proto.Bool(true)
 	payload.Pull = proto.Bool(true)
-	payload.LidDbMigrated = proto.Bool(true)
+	payload.LidDbMigrated = proto.Bool(false)
 	return payload
 }
 
