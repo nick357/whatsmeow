@@ -544,7 +544,7 @@ func (cli *Client) autoReconnect() {
 		return
 	}
 	for {
-		autoReconnectDelay := time.Duration(cli.AutoReconnectErrors) * 2 * time.Second
+		autoReconnectDelay := time.Duration(cli.AutoReconnectErrors)*2*time.Second + 5*time.Second
 		cli.Log.Debugf("Automatically reconnecting after %v", autoReconnectDelay)
 		cli.AutoReconnectErrors++
 		if cli.expectedDisconnect.WaitTimeout(autoReconnectDelay) {
