@@ -55,6 +55,8 @@ func (cli *Client) keepAliveLoop(ctx context.Context) {
 					go cli.dispatchEvent(&events.KeepAliveRestored{})
 				}
 				lastSuccess = time.Now()
+				// 只要主动心跳成功一次就退出心跳，后续用服务器端的心跳维持
+				return
 			}
 		case <-ctx.Done():
 			return
