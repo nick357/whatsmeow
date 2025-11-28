@@ -612,6 +612,10 @@ type DeviceProps_HistorySyncConfig struct {
 	SupportAddOnHistorySyncMigration         *bool                  `protobuf:"varint,13,opt,name=supportAddOnHistorySyncMigration" json:"supportAddOnHistorySyncMigration,omitempty"`
 	SupportMessageAssociation                *bool                  `protobuf:"varint,14,opt,name=supportMessageAssociation" json:"supportMessageAssociation,omitempty"`
 	SupportGroupHistory                      *bool                  `protobuf:"varint,15,opt,name=supportGroupHistory" json:"supportGroupHistory,omitempty"`
+	OnDemandReady                            *bool                  `protobuf:"varint,16,opt,name=onDemandReady" json:"onDemandReady,omitempty"`
+	SupportGuestChat                         *bool                  `protobuf:"varint,17,opt,name=supportGuestChat" json:"supportGuestChat,omitempty"`
+	CompleteOnDemandReady                    *bool                  `protobuf:"varint,18,opt,name=completeOnDemandReady" json:"completeOnDemandReady,omitempty"`
+	ThumbnailSyncDaysLimit                   *uint32                `protobuf:"varint,19,opt,name=thumbnailSyncDaysLimit" json:"thumbnailSyncDaysLimit,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }

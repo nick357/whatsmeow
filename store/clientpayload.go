@@ -156,6 +156,8 @@ var DeviceProps = &waCompanionReg.DeviceProps{
 		SupportMessageAssociation: proto.Bool(true),
 		// 是否支持同步 群组历史消息
 		SupportGroupHistory: proto.Bool(false),
+		// 缩略图同步天数限制
+		ThumbnailSyncDaysLimit: proto.Uint32(90),
 	},
 }
 
