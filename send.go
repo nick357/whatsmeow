@@ -1089,6 +1089,10 @@ func (cli *Client) prepareMessageNode(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get device list: %w", err)
 	}
+	if !isAllParticipantsInAllDevices(participants, allDevices) {
+		cli.Log.Warnf("NotAllParticipantsInAllDevices")
+		return nil, nil, fmt.Errorf("NotAllParticipantsInAllDevices")
+	}
 
 	msgType := getTypeFromMessage(message)
 	encAttrs := waBinary.Attrs{}
@@ -1326,4 +1330,23 @@ func (cli *Client) encryptMessageForDevice(
 		Attrs:   encAttrs,
 		Content: ciphertext.Serialize(),
 	}, includeDeviceIdentity, nil
+}
+
+// 是否聊天的参与者都在拿到的设备列表里
+func isAllParticipantsInAllDevices(participants []types.JID, devices []types.JID) bool {
+	numParticipants := len(participants)
+	numParticipantsInAllDevices := 0
+	for _, participant := range participants {
+		u := participant.User
+		for _, device := range devices {
+			if u == device.User {
+				numParticipantsInAllDevices++
+				break
+			}
+		}
+	}
+	if numParticipantsInAllDevices == numParticipants {
+		return true
+	}
+	return false
 }
