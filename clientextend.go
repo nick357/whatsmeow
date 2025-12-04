@@ -9,22 +9,28 @@ import (
 )
 
 // 模拟发送消息前发送键盘事件的模拟行为
-func (cli *Client) sendChatState(jid types.JID) {
-	// 3、发送订阅请求
+func (cli *Client) sendChatState1(jid types.JID) {
+	// 1、发送自己在线状态
+	// <presence type="available" name="Tank" />
+	cli.SendPresence(types.PresenceAvailable)
+	// 2、发送订阅请求
 	// <presence type="subscribe" to="639757430046@s.whatsapp.net"><tctoken>0401173767940d8cc2be16</tctoken></presence>
 	cli.SubscribePresence(jid)
 
-	// 4、开始输入
+	// 3、开始输入
 	// <chatstate to="639757430046@s.whatsapp.net"><composing /></chatstate>
 	cli.SendChatPresence(jid, types.ChatPresenceComposing, types.ChatPresenceMediaText)
 
 	// 随机延迟1-3秒
 	SleepRandom1to3()
 
-	// 5、输入结束
+	// 4、输入结束
 	// <chatstate to="639757430046@s.whatsapp.net"><paused /></chatstate>
 	cli.SendChatPresence(jid, types.ChatPresencePaused, types.ChatPresenceMediaText)
+}
 
+// 模拟发送消息前发送键盘事件的模拟行为
+func (cli *Client) sendChatState2(jid types.JID) {
 	// 6、建立信任
 	// <iq to="s.whatsapp.net" type="set" xmlns="privacy" id="29294.52599-149"><tokens><token jid="639757430046@s.whatsapp.net" t="1761622030" type="trusted_contact" /></tokens></iq>
 	cli.SetTrustedContact(jid.String())
