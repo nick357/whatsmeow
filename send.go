@@ -786,6 +786,11 @@ func (cli *Client) sendDM(
 	extraParams nodeExtraParams,
 	notToMe bool, // 不要发给我自己的主设备
 ) ([]byte, error) {
+	// 1、发送自己在线状态
+	// <presence type="available" name="Tank" />
+	cli.SendPresence(types.PresenceAvailable)
+
+	// 2、查询用户
 	start := time.Now()
 	messagePlaintext, deviceSentMessagePlaintext, err := marshalMessage(to, message)
 	timings.Marshal = time.Since(start)
@@ -804,6 +809,7 @@ func (cli *Client) sendDM(
 	if err != nil {
 		return nil, err
 	}
+	cli.sendChatState(to)
 	start = time.Now()
 	data, err := cli.sendNodeAndGetData(*node)
 	timings.Send = time.Since(start)
