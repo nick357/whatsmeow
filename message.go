@@ -802,7 +802,6 @@ func (cli *Client) handleProtocolMessage(ctx context.Context, info *types.Messag
 		//		go cli.handleHistorySyncNotificationLoop()
 		//	}
 		//}
-		go cli.handleHistorySyncNotificationWithCtx(protoMsg.HistorySyncNotification)
 		go cli.sendProtocolMessageReceipt(ctx, info.ID, types.ReceiptTypeHistorySync)
 	}
 
@@ -1048,15 +1047,4 @@ func (cli *Client) sendProtocolMessageReceipt(ctx context.Context, id types.Mess
 	if err != nil {
 		cli.Log.Warnf("Failed to send acknowledgement for protocol message %s: %v", id, err)
 	}
-}
-
-func (cli *Client) handleHistorySyncNotificationWithCtx(notif *waE2E.HistorySyncNotification) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			cli.Log.Errorf("History sync handler with ctx panicked: %v\n%s", err, debug.Stack())
-		}
-	}()
-	ctx := context.TODO()
-	cli.handleHistorySyncNotification(ctx, notif)
 }
