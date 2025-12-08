@@ -229,7 +229,8 @@ func (proc *Processor) decodeSnapshot(ctx context.Context, name WAPatchName, ss 
 	if validateMACs {
 		_, err = proc.validateSnapshotMAC(ctx, name, currentState, ss.GetKeyID().GetID(), ss.GetMac())
 		if err != nil {
-			return
+			// 主动同步 regular_high 时只有 snapshot 校验不通过也不退出，为了最终能保存到数据库
+			// return
 		}
 	}
 
@@ -237,8 +238,9 @@ func (proc *Processor) decodeSnapshot(ctx context.Context, name WAPatchName, ss 
 	out.Mutations = newMutationsInput
 	err = proc.decodeMutations(ctx, encryptedMutations, &out, validateMACs)
 	if err != nil {
-		err = fmt.Errorf("failed to decode snapshot of v%d: %w", currentState.Version, err)
-		return
+		// 主动同步 regular_high 时只有 snapshot 校验不通过也不退出，为了最终能保存到数据库
+		// err = fmt.Errorf("failed to decode snapshot of v%d: %w", currentState.Version, err)
+		// return
 	}
 	proc.storeMACs(ctx, name, currentState, &out)
 	newMutations = out.Mutations
@@ -260,7 +262,8 @@ func (proc *Processor) DecodePatches(ctx context.Context, list *PatchList, initi
 	if list.Snapshot != nil {
 		newMutations, currentState, err = proc.decodeSnapshot(ctx, list.Name, list.Snapshot, currentState, validateMACs, newMutations)
 		if err != nil {
-			return
+			// 这里遇到错误应该要继续，避免后续处理被跳过，无法保存 regular_high，导致删除会话的 version 无法获取
+			// return
 		}
 	}
 
@@ -290,7 +293,8 @@ func (proc *Processor) DecodePatches(ctx context.Context, list *PatchList, initi
 			var keys ExpandedAppStateKeys
 			keys, err = proc.validateSnapshotMAC(ctx, list.Name, currentState, patch.GetKeyID().GetID(), patch.GetSnapshotMAC())
 			if err != nil {
-				return
+				// 这里遇到错误应该要继续，避免后续处理被跳过，无法保存 regular_high，导致删除会话的 version 无法获取
+				// return
 			}
 			patchMAC := generatePatchMAC(patch, list.Name, keys.PatchMAC, patch.GetVersion().GetVersion())
 			if !bytes.Equal(patchMAC, patch.GetPatchMAC()) {

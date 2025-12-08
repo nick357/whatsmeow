@@ -182,7 +182,7 @@ type SendRequestExtra struct {
 // in binary/proto/def.proto may be useful to find out all the allowed fields. Printing the RawMessage
 // field in incoming message events to figure out what it contains is also a good way to learn how to
 // send the same kind of message.
-func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E.Message, extra ...SendRequestExtra) (resp SendResponse, err error) {
+func (cli *Client) SendMessage(ctx context.Context, notToMe bool, to types.JID, message *waE2E.Message, extra ...SendRequestExtra) (resp SendResponse, err error) {
 	if cli == nil {
 		err = ErrClientIsNil
 		return
@@ -396,7 +396,7 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
 		if req.Peer {
 			data, err = cli.sendPeerMessage(ctx, to, req.ID, message, &resp.DebugTimings)
 		} else {
-			phash, data, err = cli.sendDM(ctx, ownID, to, req.ID, message, &resp.DebugTimings, extraParams)
+			phash, data, err = cli.sendDM(ctx, ownID, to, req.ID, message, &resp.DebugTimings, extraParams, notToMe)
 		}
 	case types.NewsletterServer:
 		data, err = cli.sendNewsletter(ctx, to, req.ID, message, req.MediaHandle, &resp.DebugTimings)
@@ -1119,6 +1119,31 @@ func (cli *Client) getMessageContent(
 			}},
 		})
 	}
+	// 对于 ViewOnceMessage 这种类型 message，必须加上这段东西才正常
+	// <biz>
+	//     <interactive  type='native_flow' v='1'>
+	//         <native_flow  name='mixed' v='2'/>
+	//     </interactive>
+	// </biz>
+	if message.ViewOnceMessage != nil {
+		content = append(content, waBinary.Node{
+			Tag: "biz",
+			Content: []waBinary.Node{{
+				Tag: "interactive",
+				Attrs: waBinary.Attrs{
+					"type": "native_flow",
+					"v":    "1",
+				},
+				Content: []waBinary.Node{{
+					Tag: "native_flow",
+					Attrs: waBinary.Attrs{
+						"name": "mixed",
+						"v":    "2",
+					},
+				}},
+			}},
+		})
+	}
 	return content
 }
 
@@ -1137,6 +1162,10 @@ func (cli *Client) prepareMessageNode(
 	timings.GetDevices = time.Since(start)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get device list: %w", err)
+	}
+	if !isAllParticipantsInAllDevices(participants, allDevices) {
+		cli.Log.Warnf("NotAllParticipantsInAllDevices")
+		return nil, nil, fmt.Errorf("NotAllParticipantsInAllDevices")
 	}
 
 	if to.Server == types.GroupServer {
@@ -1397,4 +1426,23 @@ func (cli *Client) encryptMessageForDevice(
 		Attrs:   encAttrs,
 		Content: ciphertext.Serialize(),
 	}, includeDeviceIdentity, nil
+}
+
+// 是否聊天的参与者都在拿到的设备列表里
+func isAllParticipantsInAllDevices(participants []types.JID, devices []types.JID) bool {
+	numParticipants := len(participants)
+	numParticipantsInAllDevices := 0
+	for _, participant := range participants {
+		u := participant.User
+		for _, device := range devices {
+			if u == device.User {
+				numParticipantsInAllDevices++
+				break
+			}
+		}
+	}
+	if numParticipantsInAllDevices == numParticipants {
+		return true
+	}
+	return false
 }
