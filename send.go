@@ -468,7 +468,7 @@ func (cli *Client) SendMessage(ctx context.Context, notToMe bool, to types.JID, 
 //
 // Deprecated: This method is deprecated in favor of BuildRevoke
 func (cli *Client) RevokeMessage(ctx context.Context, chat types.JID, id types.MessageID) (SendResponse, error) {
-	return cli.SendMessage(ctx, chat, cli.BuildRevoke(chat, types.EmptyJID, id))
+	return cli.SendMessage(ctx, false, chat, cli.BuildRevoke(chat, types.EmptyJID, id))
 }
 
 // BuildMessageKey builds a MessageKey object, which is used to refer to previous messages
@@ -633,7 +633,7 @@ func (cli *Client) SetDisappearingTimer(ctx context.Context, chat types.JID, tim
 		if settingTS.IsZero() {
 			settingTS = time.Now()
 		}
-		_, err = cli.SendMessage(ctx, chat, &waE2E.Message{
+		_, err = cli.SendMessage(ctx, false, chat, &waE2E.Message{
 			ProtocolMessage: &waE2E.ProtocolMessage{
 				Type:                      waE2E.ProtocolMessage_EPHEMERAL_SETTING.Enum(),
 				EphemeralExpiration:       proto.Uint32(uint32(timer.Seconds())),
@@ -833,6 +833,7 @@ func (cli *Client) sendDM(
 	message *waE2E.Message,
 	timings *MessageDebugTimings,
 	extraParams nodeExtraParams,
+	notToMe bool,
 ) (string, []byte, error) {
 	start := time.Now()
 	messagePlaintext, deviceSentMessagePlaintext, err := marshalMessage(to, message)
@@ -841,8 +842,12 @@ func (cli *Client) sendDM(
 		return "", nil, err
 	}
 
+	participants := []types.JID{to, ownID.ToNonAD()}
+	if notToMe {
+		participants = []types.JID{to}
+	}
 	node, allDevices, err := cli.prepareMessageNode(
-		ctx, to, id, message, []types.JID{to, ownID.ToNonAD()},
+		ctx, to, id, message, participants,
 		messagePlaintext, deviceSentMessagePlaintext, timings, extraParams,
 	)
 	if err != nil {

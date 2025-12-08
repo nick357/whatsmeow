@@ -234,6 +234,7 @@ func (cli *Client) retryFrame(
 	return resp, nil
 }
 
+/*
 func (cli *Client) sendIQXmppPing(query *infoQuery) (<-chan *waBinary.Node, []byte, error) {
 	if cli == nil {
 		return nil, nil, ErrClientIsNil
@@ -256,3 +257,4 @@ func (cli *Client) sendIQXmppPing(query *infoQuery) (<-chan *waBinary.Node, []by
 	}
 	return waiter, data, nil
 }
+*/
