@@ -421,7 +421,7 @@ func (cli *Client) decryptMessages(ctx context.Context, info *types.MessageInfo,
 				continue
 			}
 			protobufFailed = false
-			handlerFailed = cli.handleDecryptedMessage(ctx, info, &msg, retryCount)
+			handlerFailed = cli.handleDecryptedMessage(ctx, info, &msg, retryCount, node)
 		case 3:
 			handlerFailed, protobufFailed = cli.handleDecryptedArmadillo(ctx, info, decrypted, retryCount)
 		default:
@@ -1022,12 +1022,12 @@ func (cli *Client) storeHistoricalPNLIDMappings(ctx context.Context, mappings []
 	}
 }
 
-func (cli *Client) handleDecryptedMessage(ctx context.Context, info *types.MessageInfo, msg *waE2E.Message, retryCount int) bool {
+func (cli *Client) handleDecryptedMessage(ctx context.Context, info *types.MessageInfo, msg *waE2E.Message, retryCount int, node *waBinary.Node) bool {
 	ok := cli.processProtocolParts(ctx, info, msg)
 	if !ok {
 		return false
 	}
-	evt := &events.Message{Info: *info, RawMessage: msg, RetryCount: retryCount}
+	evt := &events.Message{Info: *info, RawMessage: msg, RetryCount: retryCount, Node: node}
 	return cli.dispatchEvent(evt.UnwrapRaw())
 }
 
