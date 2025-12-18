@@ -25,8 +25,6 @@ import (
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/exsync"
 	"go.mau.fi/util/random"
-	"golang.org/x/net/proxy"
-
 	"go.mau.fi/whatsmeow/appstate"
 	waBinary "go.mau.fi/whatsmeow/binary"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -38,6 +36,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"go.mau.fi/whatsmeow/util/keys"
 	waLog "go.mau.fi/whatsmeow/util/log"
+	"golang.org/x/net/proxy"
 )
 
 // EventHandler is a function that can handle events from WhatsApp.
@@ -213,18 +212,15 @@ const handlerQueueSize = 2048
 //		panic(err)
 //	}
 //	client := whatsmeow.NewClient(deviceStore, nil)
-
 func NewClient(deviceStore *store.Device, log waLog.Logger) *Client {
 	if log == nil {
 		log = waLog.Noop
 	}
 	uniqueIDPrefix := random.Bytes(2)
-	TransportConfig := (http.DefaultTransport.(*http.Transport)).Clone()
-	baseHTTPClient := &http.Client{
-		Transport: TransportConfig,
-	}
 	cli := &Client{
-		http:               baseHTTPClient,
+		http: &http.Client{
+			Transport: (http.DefaultTransport.(*http.Transport)).Clone(),
+		},
 		proxy:              http.ProxyFromEnvironment,
 		Store:              deviceStore,
 		Log:                log,
@@ -475,11 +471,35 @@ func (cli *Client) unlockedConnect() error {
 		if err != nil {
 			host = addr
 		}
-		// 创建TCP连接
-		tcpConn, err := (&net.Dialer{}).DialContext(ctx, network, addr)
-		if err != nil {
-			return nil, err
+
+		// 创建基础的dialer
+		baseDialer := &net.Dialer{}
+		var tcpConn net.Conn
+
+		// 检查是否有SOCKS代理
+		if cli.socksProxy != nil {
+			if contextDialer, ok := cli.socksProxy.(proxy.ContextDialer); ok {
+				tcpConn, err = contextDialer.DialContext(ctx, network, addr)
+			} else {
+				tcpConn, err = cli.socksProxy.Dial(network, addr)
+			}
+			if err != nil {
+				return nil, err
+			}
+		} else if cli.proxy != nil {
+			// 对于HTTP代理，我们先建立TCP连接，然后手动处理TLS
+			tcpConn, err = baseDialer.DialContext(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// 直接连接
+			tcpConn, err = baseDialer.DialContext(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		// 使用Chrome浏览器指纹（更稳定）
 		conn := tls.UClient(tcpConn, &tls.Config{
 			ServerName:         host,
@@ -494,6 +514,7 @@ func (cli *Client) unlockedConnect() error {
 		}
 		return conn, nil
 	}
+
 	if cli.wsDialer != nil {
 		wsDialer = *cli.wsDialer
 	} else if !cli.proxyOnlyLogin || cli.Store.ID == nil {
