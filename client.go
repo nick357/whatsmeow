@@ -9,10 +9,10 @@ package whatsmeow
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"runtime/debug"
@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	tls "github.com/Noooste/utls"
 	"github.com/gorilla/websocket"
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/exsync"
@@ -213,122 +214,12 @@ const handlerQueueSize = 2048
 //	}
 //	client := whatsmeow.NewClient(deviceStore, nil)
 
-func getAdvancedRandomTLSConfig() *tls.Config {
-	// 随机选择基础配置
-	// allConfigs := append(tlsConfigs, ja4Configs...)
-	// configIndex := int(random.Bytes(1)[0]) % len(allConfigs)
-	// baseConfig := allConfigs[configIndex]
-
-	// 随机选择 TLS 版本组合
-	versionCombinations := [][2]uint16{
-		{tls.VersionTLS12, tls.VersionTLS13},
-		{tls.VersionTLS12, tls.VersionTLS12},
-		{tls.VersionTLS13, tls.VersionTLS13},
-	}
-	versionChoice := int(random.Bytes(1)[0]) % len(versionCombinations)
-	minVersion := versionCombinations[versionChoice][0]
-	maxVersion := versionCombinations[versionChoice][1]
-
-	// 随机选择加密套件子集
-	allCipherSuites := []uint16{
-		tls.TLS_AES_128_GCM_SHA256,
-		tls.TLS_AES_256_GCM_SHA384,
-		tls.TLS_CHACHA20_POLY1305_SHA256,
-		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-		tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-		tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-		tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-		tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-	}
-
-	// 随机选择 6-12 个加密套件
-	minSuites := 6
-	maxSuites := 12
-	numSuites := minSuites + int(random.Bytes(1)[0])%(maxSuites-minSuites+1)
-
-	// 随机选择加密套件
-	selectedSuites := make([]uint16, 0, numSuites)
-	usedIndices := make(map[int]bool)
-
-	for len(selectedSuites) < numSuites && len(selectedSuites) < len(allCipherSuites) {
-		idx := int(random.Bytes(1)[0]) % len(allCipherSuites)
-		if !usedIndices[idx] {
-			selectedSuites = append(selectedSuites, allCipherSuites[idx])
-			usedIndices[idx] = true
-		}
-	}
-
-	// 随机选择椭圆曲线
-	allCurves := []tls.CurveID{
-		tls.X25519,
-		tls.CurveP256,
-		tls.CurveP384,
-		tls.CurveP521,
-	}
-
-	// 随机选择 2-3 个曲线
-	minCurves := 2
-	maxCurves := 3
-	numCurves := minCurves + int(random.Bytes(1)[0])%(maxCurves-minCurves+1)
-
-	selectedCurves := make([]tls.CurveID, 0, numCurves)
-	usedCurveIndices := make(map[int]bool)
-
-	for len(selectedCurves) < numCurves && len(selectedCurves) < len(allCurves) {
-		idx := int(random.Bytes(1)[0]) % len(allCurves)
-		if !usedCurveIndices[idx] {
-			selectedCurves = append(selectedCurves, allCurves[idx])
-			usedCurveIndices[idx] = true
-		}
-	}
-
-	// 随机选择 ALPN 协议 (移除了包含"h2"的选项)
-	alpnOptions := [][]string{
-		{"http/1.1"},
-		{"http/1.1"},
-		{"http/1.1"},
-		{"http/1.1", "http/1.0"},
-	}
-	selectedALPN := alpnOptions[int(random.Bytes(1)[0])%len(alpnOptions)]
-
-	// 创建最终配置
-	config := &tls.Config{
-		CipherSuites:           selectedSuites,
-		CurvePreferences:       selectedCurves,
-		NextProtos:             selectedALPN,
-		MinVersion:             minVersion,
-		MaxVersion:             maxVersion,
-		SessionTicketsDisabled: random.Bytes(1)[0]%2 == 0, // 50% 概率禁用会话票据
-	}
-
-	// 随机打乱顺序以增加指纹变化
-	for i := range config.CipherSuites {
-		j := int(random.Bytes(1)[0]) % len(config.CipherSuites)
-		config.CipherSuites[i], config.CipherSuites[j] = config.CipherSuites[j], config.CipherSuites[i]
-	}
-
-	for i := range config.CurvePreferences {
-		j := int(random.Bytes(1)[0]) % len(config.CurvePreferences)
-		config.CurvePreferences[i], config.CurvePreferences[j] = config.CurvePreferences[j], config.CurvePreferences[i]
-	}
-
-	return config
-}
-
 func NewClient(deviceStore *store.Device, log waLog.Logger) *Client {
 	if log == nil {
 		log = waLog.Noop
 	}
 	uniqueIDPrefix := random.Bytes(2)
 	TransportConfig := (http.DefaultTransport.(*http.Transport)).Clone()
-	TransportConfig.TLSClientConfig = getAdvancedRandomTLSConfig()
 	baseHTTPClient := &http.Client{
 		Transport: TransportConfig,
 	}
@@ -578,7 +469,31 @@ func (cli *Client) unlockedConnect() error {
 
 	cli.resetExpectedDisconnect()
 	var wsDialer websocket.Dialer
-	wsDialer.TLSClientConfig = getAdvancedRandomTLSConfig()
+	wsDialer.NetDialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// 提取主机名
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			host = addr
+		}
+		// 创建TCP连接
+		tcpConn, err := (&net.Dialer{}).DialContext(ctx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		// 使用Chrome浏览器指纹（更稳定）
+		conn := tls.UClient(tcpConn, &tls.Config{
+			ServerName:         host,
+			InsecureSkipVerify: false,
+		}, tls.HelloChrome_Auto, true, true)
+
+		// 执行握手
+		err = conn.Handshake()
+		if err != nil {
+			tcpConn.Close()
+			return nil, err
+		}
+		return conn, nil
+	}
 	if cli.wsDialer != nil {
 		wsDialer = *cli.wsDialer
 	} else if !cli.proxyOnlyLogin || cli.Store.ID == nil {
