@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	tls "github.com/Noooste/utls"
+	tls "github.com/bogdanfinn/utls"
 	"github.com/gorilla/websocket"
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/exsync"
